@@ -1,0 +1,95 @@
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
+import { UsersService } from '../users/users.service';
+import { LoginUserDto } from '../users/dto/login-user.dto';
+import { CreateUserDto } from '../users/dto/create-user.dto';
+import { JwtPayload } from './interfaces/jwt-payload.interface';
+import { TokenResponse } from './interfaces/token-response.interface'
+
+@Injectable()
+export class AuthService {
+  constructor(
+    private usersService: UsersService,
+    private jwtService: JwtService,
+    private configService: ConfigService,
+  ) {}
+
+  async signup(createUserDto: CreateUserDto): Promise<TokenResponse> {
+    const newUser = await this.usersService.create(createUserDto);
+    
+    const tokens = await this.generateTokens(newUser.id);
+    
+    // Store refresh token in database
+    await this.usersService.updateRefreshToken(newUser.id, tokens.refreshToken);
+    
+    return tokens;
+  }
+
+  async login(loginUserDto: LoginUserDto): Promise<TokenResponse> {
+    const user = await this.usersService.validateUser(loginUserDto);
+    
+    const tokens = await this.generateTokens(user.id);
+    
+    // Store refresh token in database
+    await this.usersService.updateRefreshToken(user.id, tokens.refreshToken);
+    
+    return tokens;
+  }
+
+  async refreshTokens(userId: string, refreshToken: string): Promise<TokenResponse> {
+    const isRefreshTokenValid = await this.usersService.validateRefreshToken(
+      userId,
+      refreshToken,
+    );
+
+    if (!isRefreshTokenValid) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    const tokens = await this.generateTokens(userId);
+    
+    // Update refresh token in database
+    await this.usersService.updateRefreshToken(userId, tokens.refreshToken);
+    
+    return tokens;
+  }
+
+  async logout(userId: string): Promise<void> {
+    await this.usersService.updateRefreshToken(userId, null);
+  }
+
+  private async generateTokens(userId: string): Promise<TokenResponse> {
+    const [accessToken, refreshToken] = await Promise.all([
+      this.generateAccessToken(userId),
+      this.generateRefreshToken(userId),
+    ]);
+
+    return {
+      accessToken,
+      refreshToken,
+    };
+  }
+
+  private async generateAccessToken(userId: string): Promise<string> {
+    const payload: JwtPayload = { sub: userId };
+    const secret = this.configService.get<string>('jwt.secret') || 'pimc_stronger_secret_key_that_is_at_least_256_bits_long_for_better_security_12345678';
+    const expiresIn = this.configService.get<string>('jwt.accessTokenExpiration') || '7d';
+    
+    return this.jwtService.sign(payload, {
+      secret,
+      expiresIn,
+    });
+  }
+
+  private async generateRefreshToken(userId: string): Promise<string> {
+    const payload: JwtPayload = { sub: userId };
+    const secret = this.configService.get<string>('jwt.secret') || 'pimc_stronger_secret_key_that_is_at_least_256_bits_long_for_better_security_12345678';
+    const expiresIn = this.configService.get<string>('jwt.refreshTokenExpiration') || '14d';
+    
+    return this.jwtService.sign(payload, {
+      secret,
+      expiresIn,
+    });
+  }
+} 
