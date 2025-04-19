@@ -1,6 +1,6 @@
 # PIMC Backend
 
-This is the backend service for the Pakistan International Medical City (PIMC) membership management system, built with NestJS and PostgreSQL.
+This is the backend service for the Pakistan International Medical City (PIMC) membership management system, built with NestJS and MongoDB.
 
 ## Features
 
@@ -13,7 +13,7 @@ This is the backend service for the Pakistan International Medical City (PIMC) m
 ## Prerequisites
 
 - Node.js (v16 or higher)
-- PostgreSQL
+- MongoDB (v4.4 or higher)
 
 ## Installation
 
@@ -33,12 +33,8 @@ Create a `.env` file in the root directory with the following variables:
 NODE_ENV=development
 PORT=3000
 
-# Database
-DB_HOST=localhost
-DB_PORT=5432
-DB_USERNAME=postgres
-DB_PASSWORD=postgres
-DB_NAME=pimc_db
+# MongoDB
+MONGODB_URI=mongodb://localhost:27017/pimc_db
 
 # JWT
 JWT_SECRET=pimc_supersecret_jwt_key_change_in_production
@@ -50,12 +46,11 @@ Adjust the values according to your environment.
 
 ## Database Setup
 
-Make sure you have PostgreSQL installed and running. Then create a database named `pimc_db` (or the name you specified in your `.env` file).
+Make sure you have MongoDB installed and running. MongoDB will automatically create the database when the application connects to it.
 
 ```bash
-# Using psql
-psql -U postgres
-CREATE DATABASE pimc_db;
+# Start MongoDB (if not running as a service)
+mongod
 ```
 
 ## Running the Application

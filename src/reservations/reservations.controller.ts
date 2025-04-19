@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Param, Delete, UseGuards, Request, Patch }
 import { ReservationsService } from './reservations.service';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { ReservationStatus } from './entities/reservation.entity';
+import { ReservationStatus } from './schemas/reservation.schema';
 
 @Controller('reservations')
 export class ReservationsController {
@@ -11,13 +11,16 @@ export class ReservationsController {
   @UseGuards(JwtAuthGuard)
   @Post()
   create(@Request() req, @Body() createReservationDto: CreateReservationDto) {
-    return this.reservationsService.create(req.user.id, createReservationDto);
+    const userId = req.user.id || req.user._id || req.user.sub;
+    console.log('Creating reservation with userId:', userId);
+    return this.reservationsService.create(userId, createReservationDto);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get()
   findAll(@Request() req) {
-    return this.reservationsService.findAllByUser(req.user.id);
+    const userId = req.user.id || req.user._id || req.user.sub;
+    return this.reservationsService.findAllByUser(userId);
   }
 
   @UseGuards(JwtAuthGuard)

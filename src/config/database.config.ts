@@ -1,13 +1,5 @@
 import { registerAs } from '@nestjs/config';
 
 export default registerAs('database', () => ({
-  type: 'postgres',
-  host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : 5432,
-  username: process.env.DB_USERNAME || 'postgres',
-  password: process.env.DB_PASSWORD || 'root',
-  database: process.env.DB_NAME || 'pimc_db',
-  entities: ['dist/**/*.entity{.ts,.js}'],
-  synchronize: process.env.NODE_ENV !== 'production',
-  // logging: process.env.NODE_ENV !== 'production',
+  uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/pimc_db',
 })); 

@@ -1,5 +1,5 @@
 import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
-import { PlotSize } from '../entities/reservation.entity';
+import { PlotSize } from '../schemas/reservation.schema';
 
 export class CreateReservationDto {
   @IsNotEmpty()

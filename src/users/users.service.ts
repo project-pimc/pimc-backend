@@ -1,31 +1,26 @@
 import { ConflictException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
-import { User } from './entities/user.entity';
+import { User, UserDocument } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
 
 @Injectable()
 export class UsersService {
   constructor(
-    @InjectRepository(User)
-    private usersRepository: Repository<User>,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
   ) {}
 
-  async create(createUserDto: CreateUserDto): Promise<Omit<User, 'password' | 'refreshToken'>> {
+  async create(createUserDto: CreateUserDto): Promise<User> {
     // Check if user with email already exists
-    const existingUserByEmail = await this.usersRepository.findOne({ 
-      where: { email: createUserDto.email } 
-    });
+    const existingUserByEmail = await this.userModel.findOne({ email: createUserDto.email });
     if (existingUserByEmail) {
       throw new ConflictException('Email already registered');
     }
 
     // Check if user with CNIC already exists
-    const existingUserByCnic = await this.usersRepository.findOne({ 
-      where: { cnic: createUserDto.cnic } 
-    });
+    const existingUserByCnic = await this.userModel.findOne({ cnic: createUserDto.cnic });
     if (existingUserByCnic) {
       throw new ConflictException('CNIC already registered');
     }
@@ -34,56 +29,59 @@ export class UsersService {
     const hashedPassword = await this.hashPassword(createUserDto.password);
 
     // Create new user
-    const newUser = this.usersRepository.create({
+    const createdUser = new this.userModel({
       ...createUserDto,
       password: hashedPassword,
     });
 
-    await this.usersRepository.save(newUser);
+    await createdUser.save();
 
-    // Remove sensitive fields before returning
-    const { password, refreshToken, ...result } = newUser;
-    return result;
+    // Convert to plain object and exclude sensitive fields
+    const user = createdUser.toObject();
+    delete (user as any).password;
+    delete (user as any).refreshToken;
+    
+    return user as User;
   }
 
-  async findByEmail(email: string): Promise<User> {
-    const user = await this.usersRepository.findOne({ where: { email } });
+  async findByEmail(email: string): Promise<UserDocument> {
+    const user = await this.userModel.findOne({ email });
     if (!user) {
       throw new NotFoundException('User not found');
     }
     return user;
   }
 
-  async findById(id: string): Promise<User> {
-    const user = await this.usersRepository.findOne({ where: { id } });
+  async findById(id: string): Promise<UserDocument> {
+    const user = await this.userModel.findById(id);
     if (!user) {
       throw new NotFoundException('User not found');
     }
     return user;
   }
 
-  async findByCnic(cnic: string): Promise<User> {
-    const user = await this.usersRepository.findOne({ where: { cnic } });
+  async findByCnic(cnic: string): Promise<UserDocument> {
+    const user = await this.userModel.findOne({ cnic });
     if (!user) {
       throw new NotFoundException('User not found');
     }
     return user;
   }
 
-  async findByPassportNumber(passportNumber: string): Promise<User> {
-    const user = await this.usersRepository.findOne({ where: { passportNumber } });
+  async findByPassportNumber(passportNumber: string): Promise<UserDocument> {
+    const user = await this.userModel.findOne({ passportNumber });
     if (!user) {
       throw new NotFoundException('User not found');
     }
     return user;
   }
 
-  async validateUser(loginUserDto: LoginUserDto): Promise<User> {
+  async validateUser(loginUserDto: LoginUserDto): Promise<UserDocument> {
     const { identifier, password } = loginUserDto;
     
     // Try to find user by email, cnic, or passportNumber
-    const user = await this.usersRepository.findOne({ 
-      where: [
+    const user = await this.userModel.findOne({ 
+      $or: [
         { email: identifier },
         { cnic: identifier },
         { passportNumber: identifier }
@@ -109,7 +107,7 @@ export class UsersService {
       hashedRefreshToken = await this.hashPassword(refreshToken);
     }
     
-    await this.usersRepository.update(userId, {
+    await this.userModel.findByIdAndUpdate(userId, {
       refreshToken: hashedRefreshToken,
     });
   }
