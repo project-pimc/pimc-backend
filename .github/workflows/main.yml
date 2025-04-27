@@ -1,0 +1,49 @@
+name: Deploy Backend Staging
+
+on:
+  push:
+    branches:
+      - master  # Runs on push to main branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Setup SSH Key
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan github.com >> ~/.ssh/known_hosts
+    - name: Deploy to Server
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.SERVER_IP }}
+        username: ${{ secrets.SERVER_USER }}
+        password: ${{ secrets.SERVER_PASSWORD }}
+        script: |
+          set -e  # Stop script if any command fails
+          echo "🔹 Ensuring ~/.ssh directory exists"
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          echo "🔹 Adding SSH key and verifying connection"
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          eval "$(ssh-agent -s)"
+          ssh-add ~/.ssh/id_rsa
+          echo "🔹 Navigating to project directory"
+          cd ~/pimc-backend
+          echo "🔹 Checking Git status"
+          git status || exit 1
+          echo "🔹 Pulling latest code"
+          git pull origin main || exit 1
+          echo "🔹 Installing dependencies"
+          npm install || exit 1
+          echo "🔹 Building Nest.js project"
+          NODE_OPTIONS="--max_old_space_size=4096" npm run build || exit 1
+          echo "🔹 Restarting app using PM2"
+          pm2 restart backend-live || pm2 start "npm run start:prod" --name backend-live
+          echo "✅ Deployment successful!"
