@@ -1,0 +1,59 @@
+name: Deploy Backend Staging
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Install GitHub SSH key
+      - name: Setup GitHub SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+          eval "$(ssh-agent -s)"
+          ssh-add ~/.ssh/id_rsa
+
+      # 2. Clone via SSH using your GitHub key
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          persist-credentials: false   # don’t overwrite the SSH setup
+          ssh-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      # 3. Install your server’s PEM
+      - name: Setup Server SSH Key
+        run: |
+          echo "${{ secrets.SERVER_PEM_KEY }}" > ~/.ssh/server_key.pem
+          chmod 600 ~/.ssh/server_key.pem
+          ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+
+      # 4. SSH into your server using the PEM
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key_path: ~/.ssh/server_key.pem     # point at your PEM file, not id_rsa :contentReference[oaicite:0]{index=0}
+          # passphrase: ${{ secrets.SERVER_PEM_PASSPHRASE }}  # if your PEM is encrypted
+          script: |
+            set -e
+            echo "🔹 Navigating to project directory"
+            cd ~/pimc-backend
+            echo "🔹 Checking Git status"
+            git status || exit 1
+            echo "🔹 Pulling latest code"
+            git pull origin main || exit 1
+            echo "🔹 Installing dependencies"
+            npm install || exit 1
+            echo "🔹 Building Nest.js project"
+            NODE_OPTIONS="--max_old_space_size=4096" npm run build || exit 1
+            echo "🔹 Restarting app using PM2"
+            pm2 restart backend-live || pm2 start "npm run start:prod" --name backend-live
+            echo "✅ Deployment successful!"
