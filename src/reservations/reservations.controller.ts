@@ -12,29 +12,6 @@ import { Reservation } from './schemas/reservation.schema';
 export class ReservationsController {
   constructor(private readonly reservationsService: ReservationsService) {}
 
-  @ApiOperation({ summary: 'Create a new reservation' })
-  @ApiBody({ type: CreateReservationDto })
-  @ApiResponse({ status: 201, description: 'Reservation created successfully', type: Reservation })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 404, description: 'User not found' })
-  @UseGuards(JwtAuthGuard)
-  @Post()
-  create(@Request() req, @Body() createReservationDto: CreateReservationDto) {
-    const userId = req.user.id || req.user._id || req.user.sub;
-    console.log('Creating reservation with userId:', userId);
-    return this.reservationsService.create(userId, createReservationDto);
-  }
-
-  @ApiOperation({ summary: 'Get all reservations for current user' })
-  @ApiResponse({ status: 200, description: 'Returns all reservations for the user', type: [Reservation] })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @UseGuards(JwtAuthGuard)
-  @Get()
-  findAll(@Request() req) {
-    const userId = req.user.id || req.user._id || req.user.sub;
-    return this.reservationsService.findAllByUser(userId);
-  }
-
   @ApiOperation({ summary: 'Get a reservation by ID' })
   @ApiParam({ name: 'id', description: 'Reservation ID' })
   @ApiResponse({ status: 200, description: 'Returns the reservation', type: Reservation })
@@ -71,4 +48,28 @@ export class ReservationsController {
   remove(@Param('id') id: string) {
     return this.reservationsService.remove(id);
   }
+  
+  @ApiOperation({ summary: 'Create a new reservation' })
+  @ApiBody({ type: CreateReservationDto })
+  @ApiResponse({ status: 201, description: 'Reservation created successfully', type: Reservation })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @UseGuards(JwtAuthGuard)
+  @Post()
+  create(@Request() req, @Body() createReservationDto: CreateReservationDto) {
+    const userId = req.user.id || req.user._id || req.user.sub;
+    console.log('Creating reservation with userId:', userId);
+    return this.reservationsService.create(userId, createReservationDto);
+  }
+
+  @ApiOperation({ summary: 'Get all reservations for current user' })
+  @ApiResponse({ status: 200, description: 'Returns all reservations for the user', type: [Reservation] })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @UseGuards(JwtAuthGuard)
+  @Get()
+  findAll(@Request() req) {
+    const userId = req.user.id || req.user._id || req.user.sub;
+    return this.reservationsService.findAllByUser(userId);
+  }
+
 } 
