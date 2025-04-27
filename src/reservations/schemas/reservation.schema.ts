@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import * as mongoose from 'mongoose';
 import { Transform } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { User } from '../../users/schemas/user.schema';
 
 export enum PlotSize {
@@ -46,7 +47,11 @@ export type ReservationDocument = Reservation & Document;
 export class Reservation {
   @Transform(({ value }) => value.toString())
   _id: string;
+  
+  @ApiProperty({ description: 'Unique identifier' })
+  id: string;
 
+  @ApiProperty({ description: 'Plot size', enum: PlotSize })
   @Prop({ 
     type: String, 
     enum: PlotSize, 
@@ -55,6 +60,7 @@ export class Reservation {
   })
   plotSize: PlotSize;
 
+  @ApiProperty({ description: 'Reservation status', enum: ReservationStatus })
   @Prop({ 
     type: String, 
     enum: ReservationStatus, 
@@ -63,36 +69,51 @@ export class Reservation {
   })
   status: ReservationStatus;
 
+  @ApiPropertyOptional({ description: 'Challan number' })
   @Prop()
   challanNumber: string;
 
+  @ApiPropertyOptional({ description: 'Payment amount' })
   @Prop()
   paymentAmount: string;
 
+  @ApiPropertyOptional({ description: 'Bank draft date' })
   @Prop()
   bankDraftDate: string;
 
+  @ApiPropertyOptional({ description: 'Bank name' })
   @Prop()
   bankName: string;
 
+  @ApiPropertyOptional({ description: 'Nominee name' })
   @Prop()
   nomineeName: string;
 
+  @ApiPropertyOptional({ description: 'Nominee CNIC' })
   @Prop()
   nomineeCnic: string;
 
+  @ApiPropertyOptional({ description: 'Nominee relationship' })
   @Prop()
   nomineeRelationship: string;
 
+  @ApiPropertyOptional({ description: 'Nominee address' })
   @Prop()
   nomineeAddress: string;
 
+  @ApiProperty({ description: 'User who made the reservation', type: 'string', format: 'objectId' })
   @Prop({ 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'User',
     index: true
   })
   user: User;
+  
+  @ApiProperty({ description: 'Creation date', type: Date })
+  createdAt: Date;
+  
+  @ApiProperty({ description: 'Last update date', type: Date })
+  updatedAt: Date;
 }
 
 export const ReservationSchema = SchemaFactory.createForClass(Reservation);
