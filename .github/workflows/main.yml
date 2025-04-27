@@ -3,7 +3,7 @@ name: Deploy Backend Staging
 on:
   push:
     branches:
-      - master  # Runs on push to main branch
+      - main  # Runs on push to main branch
 
 jobs:
   deploy:
