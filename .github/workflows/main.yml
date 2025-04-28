@@ -40,7 +40,7 @@ jobs:
         with:
           host: ${{ secrets.SERVER_IP }}
           username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_PEM_KEY }}     # point at your PEM file, not id_rsa
+          key: ${{ secrets.SERVER_PEM_KEY }}     # point at your PEM file, not id_rsa :contentReference[oaicite:0]{index=0}
           # passphrase: ${{ secrets.SERVER_PEM_PASSPHRASE }}  # if your PEM is encrypted
           script: |
             set -e
@@ -50,8 +50,6 @@ jobs:
             git status || exit 1
             echo "🔹 Pulling latest code"
             git pull origin main || exit 1
-            echo "🔹 Ensuring Node.js is accessible"
-            export PATH=$PATH:/usr/local/bin:/usr/bin  # Ensure npm is in the PATH (if installed globally)
             echo "🔹 Installing dependencies"
             npm install || exit 1
             echo "🔹 Building Nest.js project"
