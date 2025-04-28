@@ -44,6 +44,9 @@ jobs:
           # passphrase: ${{ secrets.SERVER_PEM_PASSPHRASE }}  # if your PEM is encrypted
           script: |
             set -e
+            # Load NVM if installed via NVM (or add other environment setup)
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
             echo "🔹 Navigating to project directory"
             cd ~/pimc-backend
             echo "🔹 Checking Git status"
@@ -57,3 +60,4 @@ jobs:
             echo "🔹 Restarting app using PM2"
             pm2 restart backend-live || pm2 start "npm run start:prod" --name backend-live
             echo "✅ Deployment successful!"
+
