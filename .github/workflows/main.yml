@@ -40,7 +40,7 @@ jobs:
         with:
           host: ${{ secrets.SERVER_IP }}
           username: ${{ secrets.SERVER_USER }}
-          key_path: ~/.ssh/server_key.pem     # point at your PEM file, not id_rsa :contentReference[oaicite:0]{index=0}
+          key: ${{ secrets.SERVER_PEM_KEY }}     # point at your PEM file, not id_rsa :contentReference[oaicite:0]{index=0}
           # passphrase: ${{ secrets.SERVER_PEM_PASSPHRASE }}  # if your PEM is encrypted
           script: |
             set -e
