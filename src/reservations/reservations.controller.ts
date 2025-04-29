@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Delete, UseGuards, Request, Patch } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, UseGuards, Request, Patch, Put } from '@nestjs/common';
 import { ReservationsService } from './reservations.service';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -30,12 +30,13 @@ export class ReservationsController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Reservation not found' })
   @UseGuards(JwtAuthGuard)
-  @Patch(':id/status/:status')
+  @Put(':id/status')
   updateStatus(
     @Param('id') id: string,
-    @Param('status') status: ReservationStatus,
+    @Body('status') status: ReservationStatus,
+    @Body('remarks') remarks?: string
   ) {
-    return this.reservationsService.updateStatus(id, status);
+    return this.reservationsService.updateStatus(id, status, remarks);
   }
 
   @ApiOperation({ summary: 'Delete a reservation' })
@@ -57,19 +58,23 @@ export class ReservationsController {
   @UseGuards(JwtAuthGuard)
   @Post()
   create(@Request() req, @Body() createReservationDto: CreateReservationDto) {
-    const userId = req.user.id || req.user._id || req.user.sub;
-    console.log('Creating reservation with userId:', userId);
-    return this.reservationsService.create(userId, createReservationDto);
+    return this.reservationsService.create(req.user.id, createReservationDto);
   }
 
   @ApiOperation({ summary: 'Get all reservations for current user' })
   @ApiResponse({ status: 200, description: 'Returns all reservations for the user', type: [Reservation] })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @UseGuards(JwtAuthGuard)
-  @Get()
-  findAll(@Request() req) {
-    const userId = req.user.id || req.user._id || req.user.sub;
-    return this.reservationsService.findAllByUser(userId);
+  @Post('my-reservations')
+  async findAllByUser(@Request() req) {
+    return await this.reservationsService.findAllByUser(req.user.id);
   }
 
+  @Put(':id/document-upload')
+  handleDocumentUpload(
+    @Param('id') id: string,
+    @Body('documentTitle') documentTitle: string
+  ) {
+    return this.reservationsService.handleDocumentUpload(id, documentTitle);
+  }
 } 

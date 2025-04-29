@@ -130,4 +130,24 @@ export class UsersService {
   private async comparePasswords(password: string, hashedPassword: string): Promise<boolean> {
     return bcrypt.compare(password, hashedPassword);
   }
+
+  async findByEmailOrCnic(identifier: string): Promise<User> {
+    const user = await this.userModel.findOne({
+      $or: [
+        { email: identifier },
+        { cnic: identifier }
+      ]
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Convert to plain object and exclude sensitive fields
+    const userObj = user.toObject();
+    delete (userObj as any).password;
+    delete (userObj as any).refreshToken;
+    
+    return userObj as User;
+  }
 } 

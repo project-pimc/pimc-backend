@@ -22,6 +22,11 @@ export class ReservationsService {
         ...createReservationDto,
         status: ReservationStatus.PENDING,
         user: user._id,
+        statusEventHistory: [{
+          status: ReservationStatus.PENDING,
+          eventDateTime: new Date(),
+          remarks: 'Reservation initiated'
+        }]
       });
 
       const savedReservation = await newReservation.save();
@@ -37,7 +42,7 @@ export class ReservationsService {
   }
 
   async findAllByUser(userId: string): Promise<Reservation[]> {
-    return this.reservationModel.find({ user: userId }).populate('user').exec();
+    return await this.reservationModel.find({ user: userId }).populate('user').exec();
   }
 
   async findOne(id: string): Promise<Reservation> {
@@ -50,18 +55,37 @@ export class ReservationsService {
     return reservation;
   }
 
-  async updateStatus(id: string, status: ReservationStatus): Promise<Reservation> {
+  async updateStatus(id: string, status: ReservationStatus, remarks?: string): Promise<Reservation> {
     const reservation = await this.reservationModel.findByIdAndUpdate(
-      id, 
-      { status }, 
+      id,
+      {
+        $set: { status },
+        $push: {
+          statusEventHistory: {
+            status,
+            eventDateTime: new Date(),
+            remarks
+          }
+        }
+      },
       { new: true }
     ).populate('user').exec();
-    
+
     if (!reservation) {
       throw new NotFoundException(`Reservation with ID ${id} not found`);
     }
-    
+
     return reservation;
+  }
+
+  async handleDocumentUpload(id: string, documentTitle: string): Promise<Reservation> {
+    if (documentTitle === 'challan_receipt') {
+      return this.updateStatus(
+        id,
+        ReservationStatus.UNDER_REVIEW,
+      );
+    }
+    return this.findOne(id);
   }
 
   async remove(id: string): Promise<void> {

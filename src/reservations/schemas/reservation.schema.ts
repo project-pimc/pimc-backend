@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Schema as MongooseSchema } from 'mongoose';
 import * as mongoose from 'mongoose';
 import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -114,6 +114,17 @@ export class Reservation {
   
   @ApiProperty({ description: 'Last update date', type: Date })
   updatedAt: Date;
+
+  @Prop([{
+    status: { type: String, enum: Object.values(ReservationStatus), required: true },
+    eventDateTime: { type: Date, default: Date.now },
+    remarks: { type: String }
+  }])
+  statusEventHistory: Array<{
+    status: ReservationStatus;
+    eventDateTime: Date;
+    remarks?: string;
+  }>;
 }
 
 export const ReservationSchema = SchemaFactory.createForClass(Reservation);
