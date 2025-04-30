@@ -112,6 +112,12 @@ export class UsersService {
     });
   }
 
+  async incrementTokenVersion(userId: string): Promise<void> {
+    await this.userModel.findByIdAndUpdate(userId, {
+      $inc: { tokenVersion: 1 }
+    });
+  }
+
   async validateRefreshToken(userId: string, refreshToken: string): Promise<boolean> {
     const user = await this.findById(userId);
     

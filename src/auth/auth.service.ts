@@ -17,7 +17,6 @@ export class AuthService {
 
   async signup(createUserDto: CreateUserDto): Promise<TokenResponse> {
     const newUser = await this.usersService.create(createUserDto);
-    
     const tokens = await this.generateTokens(newUser.id);
     
     // Store refresh token in database
@@ -56,13 +55,17 @@ export class AuthService {
   }
 
   async logout(userId: string): Promise<void> {
+    // Increment token version to invalidate all existing tokens
+    await this.usersService.incrementTokenVersion(userId);
+    // Clear refresh token
     await this.usersService.updateRefreshToken(userId, null);
   }
 
   private async generateTokens(userId: string): Promise<TokenResponse> {
+    const user = await this.usersService.findById(userId);
     const [accessToken, refreshToken] = await Promise.all([
-      this.generateAccessToken(userId),
-      this.generateRefreshToken(userId),
+      this.generateAccessToken(userId, user.tokenVersion),
+      this.generateRefreshToken(userId, user.tokenVersion),
     ]);
 
     return {
@@ -71,8 +74,11 @@ export class AuthService {
     };
   }
 
-  private async generateAccessToken(userId: string): Promise<string> {
-    const payload: JwtPayload = { sub: userId };
+  private async generateAccessToken(userId: string, tokenVersion: number): Promise<string> {
+    const payload: JwtPayload = { 
+      sub: userId,
+      tokenVersion
+    };
     const secret = this.configService.get<string>('jwt.secret') || 'pimc_stronger_secret_key_that_is_at_least_256_bits_long_for_better_security_12345678';
     const expiresIn = this.configService.get<string>('jwt.accessTokenExpiration') || '7d';
     
@@ -82,8 +88,11 @@ export class AuthService {
     });
   }
 
-  private async generateRefreshToken(userId: string): Promise<string> {
-    const payload: JwtPayload = { sub: userId };
+  private async generateRefreshToken(userId: string, tokenVersion: number): Promise<string> {
+    const payload: JwtPayload = { 
+      sub: userId,
+      tokenVersion
+    };
     const secret = this.configService.get<string>('jwt.secret') || 'pimc_stronger_secret_key_that_is_at_least_256_bits_long_for_better_security_12345678';
     const expiresIn = this.configService.get<string>('jwt.refreshTokenExpiration') || '14d';
     

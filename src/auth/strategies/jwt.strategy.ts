@@ -23,6 +23,11 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       console.log('JWT payload:', payload);
       const user = await this.usersService.findById(payload.sub);
       
+      // Check if token version matches
+      if (user.tokenVersion !== payload.tokenVersion) {
+        throw new UnauthorizedException('Token has been invalidated');
+      }
+      
       const { password, refreshToken, ...result } = user;
       const userToReturn = { ...result, _id: payload.sub, id: payload.sub };
       console.log('User for request:', userToReturn);

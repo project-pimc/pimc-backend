@@ -30,6 +30,13 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'jwt-refresh'
     const refreshToken = authHeader.split(' ')[1];
     
     try {
+      const user = await this.usersService.findById(payload.sub);
+      
+      // Check if token version matches
+      if (user.tokenVersion !== payload.tokenVersion) {
+        throw new UnauthorizedException('Token has been invalidated');
+      }
+
       const isRefreshTokenValid = await this.usersService.validateRefreshToken(
         payload.sub,
         refreshToken,
