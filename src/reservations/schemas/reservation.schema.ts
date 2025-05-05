@@ -17,6 +17,7 @@ export enum PlotSize {
 export enum ReservationStatus {
   PENDING = 'Pending',
   UNDER_REVIEW = 'Under Review',
+  OBJECTION = 'Objection',
   ACCEPTED = 'Accepted',
   REJECTED = 'Rejected',
 }

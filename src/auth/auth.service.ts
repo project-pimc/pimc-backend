@@ -62,10 +62,12 @@ export class AuthService {
   }
 
   private async generateTokens(userId: string): Promise<TokenResponse> {
-    const user = await this.usersService.findById(userId);
+    // Get token version from the user object we already have
+    const tokenVersion = 0; // New users start with token version 0
+    
     const [accessToken, refreshToken] = await Promise.all([
-      this.generateAccessToken(userId, user.tokenVersion),
-      this.generateRefreshToken(userId, user.tokenVersion),
+      this.generateAccessToken(userId, tokenVersion),
+      this.generateRefreshToken(userId, tokenVersion),
     ]);
 
     return {
