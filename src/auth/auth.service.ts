@@ -17,7 +17,7 @@ export class AuthService {
 
   async signup(createUserDto: CreateUserDto): Promise<TokenResponse> {
     const newUser = await this.usersService.create(createUserDto);
-    const tokens = await this.generateTokens(newUser.id);
+    const tokens = await this.generateTokens(newUser.id, 0); // New users start with token version 0
     
     // Store refresh token in database
     await this.usersService.updateRefreshToken(newUser.id, tokens.refreshToken);
@@ -28,7 +28,7 @@ export class AuthService {
   async login(loginUserDto: LoginUserDto): Promise<TokenResponse> {
     const user = await this.usersService.validateUser(loginUserDto);
     
-    const tokens = await this.generateTokens(user.id);
+    const tokens = await this.generateTokens(user.id, user.tokenVersion);
     
     // Store refresh token in database
     await this.usersService.updateRefreshToken(user.id, tokens.refreshToken);
@@ -46,7 +46,8 @@ export class AuthService {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
-    const tokens = await this.generateTokens(userId);
+    const user = await this.usersService.findById(userId);
+    const tokens = await this.generateTokens(userId, user.tokenVersion);
     
     // Update refresh token in database
     await this.usersService.updateRefreshToken(userId, tokens.refreshToken);
@@ -61,10 +62,7 @@ export class AuthService {
     await this.usersService.updateRefreshToken(userId, null);
   }
 
-  private async generateTokens(userId: string): Promise<TokenResponse> {
-    // Get token version from the user object we already have
-    const tokenVersion = 0; // New users start with token version 0
-    
+  private async generateTokens(userId: string, tokenVersion: number): Promise<TokenResponse> {
     const [accessToken, refreshToken] = await Promise.all([
       this.generateAccessToken(userId, tokenVersion),
       this.generateRefreshToken(userId, tokenVersion),
